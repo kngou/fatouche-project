@@ -67,26 +67,43 @@ def CountNucleotide(sequence):
 	return countA,countT,countC,countG
 
 
-def setCircosKaryo(exonFind,filename="none"):
+def setExonDic(blastRes,cdnaSeq):
+	exonFind = {}
+	for name,arrayOfRes in blastRes.items():
+		for index in range (len(arrayOfRes)):
+			tempArray = arrayOfRes[index].split('\t')
+			qStart = int(tempArray[6])
+			qStop =	int(tempArray[7])
+			sequence = cdnaSeq[qStart:qStop]			
+			exonFind [index]= sequence 
+	return exonFind
+
+
+
+def setCircosKaryo(blastRes,filename="none"):
 	foldername = inFile_related_function.createResultFolder("karyotype")
 	fileOUt= foldername+"\\"+filename+"_"+"karyotype.exon.txt"
 	result = open(fileOUt,"w")
 	result.write("#chr - ID LABEL START END COLOR")
 	result.write("\n")
-	for name,seq in exonFind.items():		
-		result.write("chr - axis")
-		result.write(str(name))
-		result.write(" exon")
-		result.write(str(name))
-		result.write(" 0 ")
-		size = 100*len (seq) # exon size is too short 
-		result.write(str(size))
-		
-		if name % 2 == 0:
-			result.write(" blue")
-		else :
-			result.write(" green")
-		result.write("\n")
+	for name,arrayOfRes in blastRes.items():
+		for index in range (len(arrayOfRes)):
+			tempArray = arrayOfRes[index].split('\t')
+			qStart = int(tempArray[6])
+			qStop =	int(tempArray[7])		
+			result.write("chr - axis")
+			result.write(str(index))
+			result.write(" exon")
+			result.write(str(index))
+			result.write(" ")
+			result.write(str(qStart))
+			result.write(" ")
+			result.write(str(qStop))	
+			if index %2 == 0:
+				result.write(" blue")
+			else :
+				result.write(" green")
+			result.write("\n")
 	result.close()
 	return fileOUt
 
@@ -108,7 +125,6 @@ def GCcontent(sequence):
 	GCrate = 100*GCcount/totalNuc
 	GCrate.quantize(Decimal('.00001'), rounding=ROUND_HALF_UP)
 	GCrate = round(GCrate,6)
-	# print ("le gc content est de",GCrate)
 	return GCrate
 
 """
@@ -194,7 +210,6 @@ def amorceFromInputExon(exonSelected,filename,cuttOff=20):
 			exon2Add = inFile_related_function.getExon(exonSelected,filename)
 			sequence+= exon2Add			
 			name+= str(exonSelected)+"_"	
-			# print(sequence)
 		elif not inFile_related_function.isExist(exonSelected,filename):
 			print("This exon does not exit\nEnd of the program")			
 			exit()	
@@ -211,10 +226,6 @@ def amorceFromInputExon(exonSelected,filename,cuttOff=20):
 			fileOUt = ".\\result\\"+filename+"_"+"exonSelected_amorce.txt"
 			result = open(fileOUt,"w")
 			amorceFW,amorceRV = FastaSeq.getPrimers(sequence,cuttOff = 20)
-			GCrate = GCcontent(amorceFW)
-			print ("1:",GCrate)	
-			GCrate = GCcontent(amorceRV)		
-			print ("2:",GCrate)			
 			result.write("Sequence ")
 			result.write(name)
 			result.write("\n")

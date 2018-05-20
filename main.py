@@ -67,7 +67,7 @@ outfile = os.path.basename(cdnaFile) # To keep the name of the file
 
 outExon = function.setExonList (finalArray,outfile)
 outAmorce = function.setAmorceOutput(finalArray,outfile)
-outCircos = function.setCircosKaryo(finalArray,outfile)
+outCircos = function.setCircosKaryo(blastRes,outfile)
 print ("These files\n","*",outExon,"\n*",outAmorce,"\nhave been created.\nThey contain the exon list and the list of finding amorces.")
 
 """ 
