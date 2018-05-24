@@ -9,7 +9,7 @@ import random
 import math
 import collections 
 import inFile_related_function
-from Bio.Blast.Applications import NcbiblastxCommandline
+# from Bio.Blast.Applications import NcbiblastxCommandline
 import shlex,subprocess
 
 
@@ -70,10 +70,4 @@ def parseBlast(resultFile):
 			arrayReport.append(line)		
 		file.close
 	return (blastRes)
-
-
-
-
-
-
 
