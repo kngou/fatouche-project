@@ -38,16 +38,13 @@ def RevCom(sequence):
 
  
 def setExonList (exonFind,filename="none"):
+	print (exonFind)	
 	fileOUt= ".\\result\\"+filename+"_"+"exon_list.txt"	
 	result = open(fileOUt,"w")
-	result.write("**** Isoform:")
-	filename = filename.replace("fa","")
-	result.write(filename)
-	result.write(" ****")
-	result.write("\n")
 	for index,seq in exonFind.items():
-		result.write(">exon ")
-		result.write(str(index))
+		name = index +1
+		result.write("exon ")
+		result.write(str(name))
 		result.write("\n")
 		result.write(str(seq))
 		result.write("\n")
@@ -70,30 +67,26 @@ def CountNucleotide(sequence):
 	return countA,countT,countC,countG
 
 
-def setCircosKaryo(blastRes,filename="none"):
+def setCircosKaryo(exonFind,filename="none"):
 	foldername = inFile_related_function.createResultFolder("karyotype")
 	fileOUt= foldername+"\\"+filename+"_"+"karyotype.exon.txt"
 	result = open(fileOUt,"w")
 	result.write("#chr - ID LABEL START END COLOR")
 	result.write("\n")
-	for name,arrayOfRes in blastRes.items():
-		for index in range (len(arrayOfRes)):
-			tempArray = arrayOfRes[index].split('\t')
-			qStart = int(tempArray[6])
-			qStop =	int(tempArray[7])		
-			result.write("chr - axis")
-			result.write(str(index))
-			result.write(" exon")
-			result.write(str(index))
-			result.write(" ")
-			result.write(str(qStart))
-			result.write(" ")
-			result.write(str(qStop))	
-			if index %2 == 0:
-				result.write(" blue")
-			else :
-				result.write(" green")
-			result.write("\n")
+	for name,seq in exonFind.items():		
+		result.write("chr - axis")
+		result.write(str(name))
+		result.write(" exon")
+		result.write(str(name))
+		result.write(" 0 ")
+		size = 100*len (seq) # exon size is too short 
+		result.write(str(size))
+		
+		if name % 2 == 0:
+			result.write(" blue")
+		else :
+			result.write(" green")
+		result.write("\n")
 	result.close()
 	return fileOUt
 
@@ -115,6 +108,7 @@ def GCcontent(sequence):
 	GCrate = 100*GCcount/totalNuc
 	GCrate.quantize(Decimal('.00001'), rounding=ROUND_HALF_UP)
 	GCrate = round(GCrate,6)
+	# print ("le gc content est de",GCrate)
 	return GCrate
 
 """
@@ -136,40 +130,24 @@ def TmCheck(sequence):
 """
 
 def setAmorceOutput(finalArray,filename="none"):
-	fileOUt = ".\\result\\"+filename+"_"+"primer_list.txt"
-	outFwPrimer = ".\\result\\FwPrimer_list"+filename+".txt"
-	outRvPrimer = ".\\result\\RvPrimer_list"+filename+".txt"
+	fileOUt = ".\\result\\"+filename+"_"+"amorce_list.txt"
 	result = open(fileOUt,"w")
-	resultFw = open(outFwPrimer,"w")
-	resultRv = open(outRvPrimer,"w")
 	for name,seq2input in finalArray.items():
-		amorceFW,amorceRV = FastaSeq.getPrimers(seq2input)		
+		amorceFW,amorceRV = FastaSeq.getPrimers(seq2input)
 		result.write("Sequence ")
-		resultFw.write("Sequence ")
-		resultRv.write("Sequence ")
 		result.write(str(name))
-		resultFw.write(str(name))
-		resultRv.write(str(name))
 		result.write("\n")
-		resultFw.write("\n")
-		resultRv.write("\n")
 		result.write(seq2input)
 		result.write("\n")
 		result.write("amorceFW ")
+		result.write("\n")
 		result.write(str(amorceFW))
-		if not str(amorceFW).startswith("(\"N/A ") and not str(amorceFW).startswith("(\'N/A ") :
-			resultFw.write(str(amorceFW))
-			resultFw.write("\n")
-		if not str(amorceRV).startswith("(\"N/A ") and not str(amorceRV).startswith("(\'N/A ")  :
-			resultRv.write(str(amorceRV))
-			resultRv.write("\n")		
-		result.write("\n")		
+		result.write("\n")
 		result.write("amorceRV ")
+		result.write("\n")
 		result.write(str(amorceRV))
 		result.write("\n")
 	result.close()
-	resultFw.close()
-	resultRv.close()
 	return fileOUt
 
 
@@ -216,6 +194,7 @@ def amorceFromInputExon(exonSelected,filename,cuttOff=20):
 			exon2Add = inFile_related_function.getExon(exonSelected,filename)
 			sequence+= exon2Add			
 			name+= str(exonSelected)+"_"	
+			# print(sequence)
 		elif not inFile_related_function.isExist(exonSelected,filename):
 			print("This exon does not exit\nEnd of the program")			
 			exit()	
@@ -232,6 +211,10 @@ def amorceFromInputExon(exonSelected,filename,cuttOff=20):
 			fileOUt = ".\\result\\"+filename+"_"+"exonSelected_amorce.txt"
 			result = open(fileOUt,"w")
 			amorceFW,amorceRV = FastaSeq.getPrimers(sequence,cuttOff = 20)
+			GCrate = GCcontent(amorceFW)
+			print ("1:",GCrate)	
+			GCrate = GCcontent(amorceRV)		
+			print ("2:",GCrate)			
 			result.write("Sequence ")
 			result.write(name)
 			result.write("\n")
@@ -276,10 +259,8 @@ def setExonDic(blastRes,cdnaSeq):
 	for name,arrayOfRes in blastRes.items():
 		for index in range (len(arrayOfRes)):
 			tempArray = arrayOfRes[index].split('\t')
-			SortedTempArray = sorted(tempArray, key =lambda x:int(tempArray[6]))
-			# print (SortedTempArray[6])
-			qStart = int(SortedTempArray[6])
-			qStop =	int(SortedTempArray[7])
+			qStart = int(tempArray[6])
+			qStop =	int(tempArray[7])
 			sequence = cdnaSeq[qStart:qStop]			
 			exonFind [index]= sequence 
 	return exonFind
