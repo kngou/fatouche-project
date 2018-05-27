@@ -34,17 +34,18 @@ def RevCom(sequence):
 		seq+= finalRevSeq
 	return seq
 
-
-
  
 def setExonList (exonFind,filename="none"):
-	print (exonFind)	
 	fileOUt= ".\\result\\"+filename+"_"+"exon_list.txt"	
 	result = open(fileOUt,"w")
+	result.write("**** Isoform:")
+	filename = filename.replace("fa","")
+	result.write(filename)
+	result.write(" ****")
+	result.write("\n")
 	for index,seq in exonFind.items():
-		name = index +1
-		result.write("exon ")
-		result.write(str(name))
+		result.write(">exon ")
+		result.write(str(index))
 		result.write("\n")
 		result.write(str(seq))
 		result.write("\n")
@@ -67,26 +68,30 @@ def CountNucleotide(sequence):
 	return countA,countT,countC,countG
 
 
-def setCircosKaryo(exonFind,filename="none"):
+def setCircosKaryo(blastRes,filename="none"):
 	foldername = inFile_related_function.createResultFolder("karyotype")
 	fileOUt= foldername+"\\"+filename+"_"+"karyotype.exon.txt"
 	result = open(fileOUt,"w")
 	result.write("#chr - ID LABEL START END COLOR")
 	result.write("\n")
-	for name,seq in exonFind.items():		
-		result.write("chr - axis")
-		result.write(str(name))
-		result.write(" exon")
-		result.write(str(name))
-		result.write(" 0 ")
-		size = 100*len (seq) # exon size is too short 
-		result.write(str(size))
-		
-		if name % 2 == 0:
-			result.write(" blue")
-		else :
-			result.write(" green")
-		result.write("\n")
+	for name,arrayOfRes in blastRes.items():
+		for index in range (len(arrayOfRes)):
+			tempArray = arrayOfRes[index].split('\t')
+			qStart = int(tempArray[6])
+			qStop =	int(tempArray[7])		
+			result.write("chr - axis")
+			result.write(str(index))
+			result.write(" exon")
+			result.write(str(index))
+			result.write(" ")
+			result.write(str(qStart))
+			result.write(" ")
+			result.write(str(qStop))	
+			if index %2 == 0:
+				result.write(" blue")
+			else :
+				result.write(" green")
+			result.write("\n")
 	result.close()
 	return fileOUt
 
@@ -108,7 +113,6 @@ def GCcontent(sequence):
 	GCrate = 100*GCcount/totalNuc
 	GCrate.quantize(Decimal('.00001'), rounding=ROUND_HALF_UP)
 	GCrate = round(GCrate,6)
-	# print ("le gc content est de",GCrate)
 	return GCrate
 
 """
@@ -125,26 +129,44 @@ def TmCheck(sequence):
 
 
 """
-	check the 3' complementary  
+	TODO check the 3' complementary  
 
 """
 
-def setAmorceOutput(finalArray,filename="none"):
-	fileOUt = ".\\result\\"+filename+"_"+"amorce_list.txt"
-	result = open(fileOUt,"w")
+
+def primerCdna(exonFind):
+	firstSeq = None
+	forward = ""
+	reverse = ""
+	for index,seq in exonFind.items():		
+			forward,reverse = FastaSeq.getPrimers(seq,cuttOff=20)
+			print (seq,"\n",forward,reverse)
+			# firstSeq = seq
+
+
+
+def setPrimerOutput(finalArray,filename="none"):
+	fileOUt = ".\\result\\"+filename+"_"+"primer_list.txt"	
+	result = open(fileOUt,"w")	
+	result.write("**** Isoform ")
+	filename = filename.replace("fa","")
+	result.write(filename)
+	result.write(" ****")
+	result.write("\n")
+	result.write("#exon number, primerFW, primerRV")
+	result.write("\n")
 	for name,seq2input in finalArray.items():
-		amorceFW,amorceRV = FastaSeq.getPrimers(seq2input)
-		result.write("Sequence ")
-		result.write(str(name))
-		result.write("\n")
-		result.write(seq2input)
-		result.write("\n")
-		result.write("amorceFW ")
-		result.write("\n")
-		result.write(str(amorceFW))
-		result.write("\n")
-		result.write("amorceRV ")
-		result.write("\n")
+		amorceFW,amorceRV = FastaSeq.getPrimers(seq2input)		
+		result.write(str(name))	
+		# result.write(" ")	
+		# result.write(seq2input)
+		result.write(",")		
+		if str(amorceFW).startswith("(\"not available ") or str(amorceFW).startswith("(\'not available ") :
+			amorceFW = "not available"		
+		if str(amorceRV).startswith("(\"not available ") or str(amorceRV).startswith("(\'not available ")  :
+			amorceRV = "not available"
+		result.write(str(amorceFW))			
+		result.write(",")	
 		result.write(str(amorceRV))
 		result.write("\n")
 	result.close()
@@ -153,7 +175,7 @@ def setAmorceOutput(finalArray,filename="none"):
 
 
 
-def findExonSetAmorce (genomicFile,cdnaFile,blastRes):
+def findExonSetPrimer(genomicFile,cdnaFile,blastRes):
 	genomicDict =  inFile_related_function.ExtractFasta(genomicFile)
 	cdnaDict =  inFile_related_function.ExtractFasta(cdnaFile)
 	finalArray = {}
@@ -168,76 +190,78 @@ def findExonSetAmorce (genomicFile,cdnaFile,blastRes):
 			 
 	outfile = os.path.basename(cdnaFile) # To keep the name of the file
 	outExon = setExonList (exonFind,outfile)
-	outFile = setAmorceOutput(finalArray,outfile)
+	outFile = setPrimerOutput(finalArray,outfile)
 	print ("These files\n","*",outExon,"\n*",outFile,"\nhave been created.\nThey contain the exon list and the list of finding amorces.")
 
 
 
 
 
-def amorceFromInputExon(exonSelected,filename,cuttOff=20):
-	exon2Add = ""
-	sequence = ""
-	add = None
-	name = ""
-	if inFile_related_function.isExist(exonSelected,filename):
-		exon2Add = inFile_related_function.getExon(exonSelected,filename)
-		sequence+= exon2Add
-		name+= str(exonSelected)+"_"
-	else:
-		print("This exon does not exist\nEnd of the program")
-		exit()
-	while len(sequence) < 70 :
-		numOfExon = input("the length of your selected exon is too short. Add another one.\n")
-		exonSelected = "exon "+numOfExon
-		if inFile_related_function.isExist(exonSelected,filename):
-			exon2Add = inFile_related_function.getExon(exonSelected,filename)
-			sequence+= exon2Add			
-			name+= str(exonSelected)+"_"	
-			# print(sequence)
-		elif not inFile_related_function.isExist(exonSelected,filename):
-			print("This exon does not exit\nEnd of the program")			
-			exit()	
-	if len(sequence) > 70:	
-		add = input("Would you like to add an other exon? Yes/No.\n")	
-		if add  == "Yes":
-			numOfExon = input("Write the number of the exon that you want to add.\n")
-			exonSelected = "exon "+numOfExon
-			if inFile_related_function.isExist(exonSelected,filename):
-				exon2Add = inFile_related_function.getExon(exonSelected,filename)
-				sequence+= exon2Add			
-				name+= str(exonSelected)+"_"
-		elif add  == "No":
-			fileOUt = ".\\result\\"+filename+"_"+"exonSelected_amorce.txt"
-			result = open(fileOUt,"w")
-			amorceFW,amorceRV = FastaSeq.getPrimers(sequence,cuttOff = 20)
-			GCrate = GCcontent(amorceFW)
-			print ("1:",GCrate)	
-			GCrate = GCcontent(amorceRV)		
-			print ("2:",GCrate)			
-			result.write("Sequence ")
-			result.write(name)
-			result.write("\n")
-			result.write(sequence)
-			result.write("\n")
-			result.write("amorceFw ")
-			result.write("\n")
-			result.write(amorceFW)
-			result.write("\n")
-			result.write("amorceRv")
-			result.write("\n")
-			result.write(amorceRV)
-			result.write("\n")
-			result.close()
-			print("result file is created here:",fileOUt,"\n")
-		else:
-			Print("I don't understand your choice.")
-			add  = input("Would you like to add an other exon? Yes/No.\n")
+
+def setExonDic(blastRes,cdnaSeq):
+	exonFind = {}
+	startPos = []
+	temp = []
+	startStop = {}
+	for name,arrayOfRes in blastRes.items():
+		for index in range (len(arrayOfRes)):
+			tempArray = arrayOfRes[index].split('\t')
+			qStart = int(tempArray[6])
+			qStop =	int(tempArray[7])
+			temp.append(qStart) # I select all start position						
+			startPos = sorted(temp) 
+			startStop[qStart]= qStop 
+			i=1
+		for start in startPos:
+			if start == 1 :
+				sequence = cdnaSeq[0:startStop.get(start)+10]
+				exonFind[i] = sequence
+			elif start == startPos[-1]:
+				sequence = cdnaSeq[start:startStop.get(start)]
+				exonFind[i] = sequence
+			else :
+				sequence = cdnaSeq[start:startStop.get(start)+10]
+				exonFind[i] = sequence
+			i+=1		
+	return exonFind
+
+
+def runMain(genomicFile,cdnaFile):
+	cdnaDict =  inFile_related_function.ExtractFasta(cdnaFile)
+	genomicDict =  inFile_related_function.ExtractFasta(genomicFile)
+
+# -- Creation of output files to fit in circos program
+#   Thanks to blast alignment program a list of exon is extracted from genomic and cdna files 
+
+		# -- Run blast 
+
+	blastResultfile = blast_related.runBlastN(cdnaFile,genomicFile)
+	blastRes = blast_related.parseBlast(blastResultfile)
 
 
 
+	
+	for genomicName,genomicSeq in genomicDict.items():
+		print ("In progress ...\n")
+		for cdnaName,cdnaSeq in cdnaDict.items():
+			if  len(cdnaSeq) > len(genomicSeq): # check of input files
+				print("You have input the wrong genomic file, cdna sequence is longer than genomic sequence.\n Please check your input files and try again")
+				exit ()
+		# -- Extract exon from blast result	
 
+			finalArray = setExonDic(blastRes,cdnaSeq) 
+		# -- creation of amorce list extract from exon values 
 
+	
+# -- creation of outfile 
+
+	outfile = os.path.basename(cdnaFile) # To keep the name of the file
+	outExon = setExonList (finalArray,outfile)
+	setPrimerOutput(finalArray,outfile)
+	outCircos = setCircosKaryo(blastRes,outfile)
+
+	print ("This file\n","*",outExon,"\nhas been created.\nIt contains the exon list.")
+	return outExon
 
 def endOfprogam(quit=None):
 	while quit == None or quit == "R" or quit == "rerun" or quit == "r" or quit == "RERUN":
@@ -245,22 +269,10 @@ def endOfprogam(quit=None):
 		if quit == "R" or quit == "rerun" or quit == "r" or quit == "RERUN":
 			genomicFile = input("Enter the genomic file name as it is written in the current folder.\n")
 			cdnaFile = input("Enter the cdna file name as it is written in the current folder.\n")
-			findExonSetAmorce (genomicFile,cdnaFile)
+			runMain(genomicFile,cdnaFile)
 		elif quit == "Q" or quit == "q": 
 			print("End of the program, have a nice day :D.")
 			sys.exit()
 		else:
 			print(quit,"is not a correct option! End of the program have a nice day!\n")
 			sys.exit()
-
-
-def setExonDic(blastRes,cdnaSeq):
-	exonFind = {}
-	for name,arrayOfRes in blastRes.items():
-		for index in range (len(arrayOfRes)):
-			tempArray = arrayOfRes[index].split('\t')
-			qStart = int(tempArray[6])
-			qStop =	int(tempArray[7])
-			sequence = cdnaSeq[qStart:qStop]			
-			exonFind [index]= sequence 
-	return exonFind

@@ -5,57 +5,77 @@ import re
 import sys
 import FastaSeq
 import shutil
+import glob
+
+
+# -- group and set up a final amorce list from all input primer list 
+
+def mergePrimers(filename,primers):
+	fileOUt = ".\\result\\"+filename+"_allPrimers.txt"
+	primerReport = open(fileOUt,"w")
+	for primerList in primers:
+		shutil.copyfileobj(open(primerList, 'r'), primerReport)
+	primerReport.close()
+	return fileOUt
 
 
 
-# -- set up final exon list 
-# It pastes together all exon list files
-def finalExonList(filename="Test",*exonListFile):
-	fileOUt = ".\\result\\"+filename+"_finalExonList.txt"
+
+
+
+def finalExonList(filename,exonListFile):
+	fileOUt = ".\\result\\"+filename+"_allExons.txt"
 	exonReport = open(fileOUt,"w")
 	for exonFile in exonListFile:
-		exonFile = ".\\result\\"+exonFile
 		shutil.copyfileobj(open(exonFile, 'r'), exonReport)
 	exonReport.close()
 	return fileOUt
 
-def primerInCommon(exonReport):
+def primerInCommon(primerReport):
 	Fwreport = {} # dictionnary with isoform name as key and Forward primer list as values
+	exonFw = {} # 
+	exonRv = {} # 
 	Rvreport = {} # dictionnary with isoform as key and reverse primer list as values
 	FwCount = {} # dictionnary with isoform as key and the number of this isoform in the input file
 	RvCount = {} # dictionnary with isoform as key and the number of this isoform in the input file
-	primerFw = []
-	primerRv = []
-	exonReport = exonReport
+	arrayFw = []
+	arrayRv = []
+	# exonReport = exonReport
 	name = ""
 	try :
-		fileIn = open(exonReport,"r")
+		fileIn = open(primerReport,"r")
 	except FileNotFoundError:
-		print("Your file",exonReport," does not exist !")
+		print("Your file",primerReport," does not exist !")
 		exit()
-	for exon in fileIn:
-		exon =exon.strip()	
-		# print(exon)
-		if not exon.startswith('>exon') and not exon.startswith('***'):
-			amorceFW,amorceRV = FastaSeq.getPrimers(exon)
-			if str(amorceFW).startswith("(\"not available") or str(amorceFW).startswith("(\'not available"):
-				amorceFW = 'not available'
-			if str(amorceRV).startswith("(\"not available") or str(amorceRV).startswith("(\'not available"):
-				amorceRV = 'not available'
-			primerFw.append(amorceFW)
-			primerRv.append(amorceRV)
-		if exon.startswith('***'):
-			exon = exon.replace("**** Isoform:","")
-			exon = exon.replace(" ****","")
-			name = exon
-			Fwreport[name] = primerFw
-			Rvreport[name] = primerRv
+	for line in fileIn:
+		line = line.strip()	
+		
+		if line.startswith('#') :
+			pass
+		elif line.startswith('**** '):
+			line = line.replace("**** Isoform","")
+			line = line.replace(" ****","")
+			name =line	
+			Fwreport[name] = arrayFw
+			Rvreport[name] = arrayRv		
+		else :
+			temp = line.split(',')
+			exon = temp[0]+name
+			primerFw = temp[1]
+			primerRv = temp[2]
+			arrayFw.append(primerFw)
+			arrayRv.append(primerRv)
+			exonFw[primerFw] = exon
+			exonRv[primerRv] = exon
+	
+	
 	fileIn.close()
 	# -- count the number of primers and put it in a dictionnary 
-	FwCount = countPrimers(primerFw) 
-	RvCount = countPrimers(primerRv)
-	return Fwreport, Rvreport, FwCount, RvCount
-	
+	FwCount = countPrimers(arrayFw) 
+	RvCount = countPrimers(arrayRv)
+	return Fwreport, Rvreport, FwCount, RvCount,exonFw,exonRv
+
+
 def countPrimers(arrayOfPrimer):
     countPrimer = {}.fromkeys(set(arrayOfPrimer),0)
     for primer in arrayOfPrimer:
@@ -63,61 +83,57 @@ def countPrimers(arrayOfPrimer):
     return countPrimer
 
 
-
-file1 = "TraesCS2A01G514800.1.fa_exon_list.txt"
-file2 = "TraesCS2A01G514800.2.fa_exon_list.txt"
-file3 = "TraesCS2B01G543100.1.fa_exon_list.txt"
-file4 = "TraesCS2D01G516300.1.fa_exon_list.txt"
-file5 = "TraesCS2D01G516300.2.fa_exon_list.txt"
-
-
-exonReport = finalExonList("EME1A_AT2G21800.2",file1,file2,file3,file4,file5)
-primerInCommon(exonReport)
-
-
-def setCsvReport(reportFw,countFw,reportRv,countRv,filename="Test"):
+def setCsvReport(reportFw,countFw,reportRv,countRv,exonFw,exonRv,filename):
 	fileOUt = ".\\result\\"+filename+"_finalReport.txt"
 	PrimerRate,primer,numOfIsoform = 0,0,0
 	numOfIsoform = len(reportFw.keys())
 	csvReport = open(fileOUt,"w")
-	csvReport.write("###forward , reverse, in common, not in common(isoform)")
+	csvReport.write("### exon isoform, forward, reverse, in common")
 	csvReport.write("\n")
 	for name,arrayOfprimer in reportFw.items():
 		for seq in arrayOfprimer:
+			
 			if not seq.startswith("not available"):
-				PrimerRate = countFw.get(seq)	 			
+				exon = exonFw.get(seq)	
+				csvReport.write(exon)
+				csvReport.write(" ,")
+				PrimerRate = countFw.get(seq)			 			
 				if PrimerRate == numOfIsoform :
 					csvReport.write(seq)
-					csvReport.write(",N\\A,yes,all")
+					csvReport.write(",N\\A,yes")
 					csvReport.write("\n")
-					# print(seq,",N\\A,yes,all")
 				else:
 					csvReport.write(seq)
-					csvReport.write(",N\\A,no,")
-					csvReport.write(name)
+					csvReport.write(",N\\A,no")
 					csvReport.write("\n")
 					# print(seq,",N\\A,no,",name)
 	for name,arrayOfprimer in reportRv.items():
-		for seq in arrayOfprimer:
+		for seq in arrayOfprimer:			
 			if not seq.startswith("not available"):
+				exon = exonRv.get(seq)	
+				csvReport.write(exon)
+				csvReport.write(" ,")
 				PrimerRate = countRv.get(seq)	 			
 				if PrimerRate == numOfIsoform :
 					csvReport.write("N\\A,")
 					csvReport.write(seq)
-					csvReport.write(",yes,all")
+					csvReport.write(",yes")
 					csvReport.write("\n")
 					# print("N\\A,",seq,",yes,all")
 				else:
 					csvReport.write("N\\A,")
 					csvReport.write(seq)
-					csvReport.write(",no,")
-					csvReport.write(name)
+					csvReport.write(",no")
 					csvReport.write("\n")
 
 	csvReport.close()
 	return fileOUt
-		
-
-Fwreport, Rvreport, FwCount, RvCount = primerInCommon(exonReport)
-
-setCsvReport(Fwreport,FwCount,Rvreport,RvCount,"EME1A_AT2G21800.2")
+filename = "DMC1_AT3G22880.1"
+# print ("enter the path of your folder \n")
+file = glob.glob('.\\result\\*.fa_exon_list.txt')
+primers = glob.glob('.\\result\\*.fa_primer_list.txt')
+# print (file)
+exonReport = finalExonList(filename,file)
+primerReport =mergePrimers(filename,primers)
+Fwreport, Rvreport, FwCount, RvCount,exonFw,exonRv = primerInCommon(primerReport)
+setCsvReport(Fwreport,FwCount,Rvreport,RvCount,exonFw,exonRv,filename)
