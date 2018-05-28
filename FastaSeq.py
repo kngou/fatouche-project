@@ -61,9 +61,9 @@ def getPrimers(sequence,cuttOff=20):
 		forward = "not available '%'GC issues",GCrateFW
 	if GCrateRV <= 40 or GCrateRV >= 60:
 		reverse = "not available '%'GC issues",GCrateRV
-	if TmrateFW <= 50 or TmrateFW >= 60:
+	if TmrateFW <= 50 or TmrateFW >= 61:
 		forward = "not available Tm issues",TmrateFW
-	if TmrateRV <= 50 or TmrateRV >= 60:
+	if TmrateRV <= 50 or TmrateRV >= 61:
 		reverse = "not available Tm issues",TmrateRV	
 	return (forward,reverse)
 	if __name__ == "__main__":

@@ -9,7 +9,6 @@ import random
 import math
 import collections 
 import inFile_related_function
-# from Bio.Blast.Applications import NcbiblastxCommandline
 import shlex,subprocess
 
 

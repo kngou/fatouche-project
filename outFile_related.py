@@ -88,15 +88,14 @@ def setCsvReport(reportFw,countFw,reportRv,countRv,exonFw,exonRv,filename):
 	PrimerRate,primer,numOfIsoform = 0,0,0
 	numOfIsoform = len(reportFw.keys())
 	csvReport = open(fileOUt,"w")
-	csvReport.write("### exon isoform, forward, reverse, in common")
+	csvReport.write("### exon isoform, forward, reverse, in common,copy number")
 	csvReport.write("\n")
 	for name,arrayOfprimer in reportFw.items():
-		for seq in arrayOfprimer:
-			
+		for seq in arrayOfprimer:			
 			if not seq.startswith("not available"):
 				exon = exonFw.get(seq)	
 				csvReport.write(exon)
-				csvReport.write(" ,")
+				csvReport.write(",")
 				PrimerRate = countFw.get(seq)			 			
 				if PrimerRate == numOfIsoform :
 					csvReport.write(seq)
@@ -104,7 +103,8 @@ def setCsvReport(reportFw,countFw,reportRv,countRv,exonFw,exonRv,filename):
 					csvReport.write("\n")
 				else:
 					csvReport.write(seq)
-					csvReport.write(",N\\A,no")
+					csvReport.write(",N\\A,")
+					csvReport.write(str(PrimerRate))
 					csvReport.write("\n")
 					# print(seq,",N\\A,no,",name)
 	for name,arrayOfprimer in reportRv.items():
@@ -112,7 +112,7 @@ def setCsvReport(reportFw,countFw,reportRv,countRv,exonFw,exonRv,filename):
 			if not seq.startswith("not available"):
 				exon = exonRv.get(seq)	
 				csvReport.write(exon)
-				csvReport.write(" ,")
+				csvReport.write(",")
 				PrimerRate = countRv.get(seq)	 			
 				if PrimerRate == numOfIsoform :
 					csvReport.write("N\\A,")
@@ -121,14 +121,14 @@ def setCsvReport(reportFw,countFw,reportRv,countRv,exonFw,exonRv,filename):
 					csvReport.write("\n")
 					# print("N\\A,",seq,",yes,all")
 				else:
-					csvReport.write("N\\A,")
 					csvReport.write(seq)
-					csvReport.write(",no")
+					csvReport.write(",N\\A, ")
+					csvReport.write(str(PrimerRate))
 					csvReport.write("\n")
 
 	csvReport.close()
 	return fileOUt
-filename = "DMC1_AT3G22880.1"
+filename = "test"
 # print ("enter the path of your folder \n")
 file = glob.glob('.\\result\\*.fa_exon_list.txt')
 primers = glob.glob('.\\result\\*.fa_primer_list.txt')
