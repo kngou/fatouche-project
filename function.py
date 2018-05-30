@@ -173,6 +173,32 @@ def setPrimerOutput(finalArray,filename="none"):
 	return fileOUt
 
 
+def setGenomicPrimerOutput(finalArray,filename="none"):
+	fileOUt = ".\\result\\"+filename+"_"+"genomic_primer_list.txt"	
+	result = open(fileOUt,"w")	
+	result.write("**** Isoform ")
+	filename = filename.replace("fa","")
+	result.write(filename)
+	result.write(" ****")
+	result.write("\n")
+	result.write("#exon number, GenoPrimerFW, GenoPrimerRV")
+	result.write("\n")
+	for name,seq2input in finalArray.items():
+		amorceFW,amorceRV = FastaSeq.genomicPrimers(seq2input)		
+		result.write(str(name))	
+		# result.write(" ")	
+		# result.write(seq2input)
+		result.write(",")		
+		if str(amorceFW).startswith("(\"not available ") or str(amorceFW).startswith("(\'not available ") :
+			amorceFW = "not available"		
+		if str(amorceRV).startswith("(\"not available ") or str(amorceRV).startswith("(\'not available ")  :
+			amorceRV = "not available"
+		result.write(str(amorceFW))			
+		result.write(",")	
+		result.write(str(amorceRV))
+		result.write("\n")
+	result.close()
+	return fileOUt
 
 
 def findExonSetPrimer(genomicFile,cdnaFile,blastRes):
@@ -258,6 +284,7 @@ def runMain(genomicFile,cdnaFile):
 	outfile = os.path.basename(cdnaFile) # To keep the name of the file
 	outExon = setExonList (finalArray,outfile)
 	setPrimerOutput(finalArray,outfile)
+	setGenomicPrimerOutput(finalArray,outfile)
 	outCircos = setCircosKaryo(blastRes,outfile)
 
 	print ("This file\n","*",outExon,"\nhas been created.\nIt contains the exon list.")

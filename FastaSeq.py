@@ -69,3 +69,31 @@ def getPrimers(sequence,cuttOff=20):
 	if __name__ == "__main__":
 	    import doctest
 	    doctest.testmod()
+
+
+def genomicPrimers(sequence,cuttOff=20) :
+	forward = "not available "
+	reverse = "not available "
+	if len(sequence)>= 40:
+		forward = sequence[0:cuttOff]
+		reverseSeq = RevCom(sequence)
+		reverse = reverseSeq[10:cuttOff+10]		
+		GCrateFW = function.GCcontent(forward)
+		TmrateFW = function.TmCheck(forward)
+		TmrateRV = function.TmCheck(reverse)
+		GCrateRV = function.GCcontent(reverse)
+		if GCrateFW <= 40 or GCrateFW >= 60:
+			forward = "not available '%'GC issues",GCrateFW
+		if GCrateRV <= 40 or GCrateRV >= 60:
+			reverse = "not available '%'GC issues",GCrateRV
+		if TmrateFW <= 50 or TmrateFW >= 61:
+			forward = "not available Tm issues",TmrateFW
+		if TmrateRV <= 50 or TmrateRV >= 61:
+			reverse = "not available Tm issues",TmrateRV	
+	else: 
+		print("check your sequence !")
+		
+	return (forward,reverse)
+	if __name__ == "__main__":
+	    import doctest
+	    doctest.testmod()

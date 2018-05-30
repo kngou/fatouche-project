@@ -10,8 +10,11 @@ import glob
 
 # -- group and set up a final amorce list from all input primer list 
 
-def mergePrimers(filename,primers):
-	fileOUt = ".\\result\\"+filename+"_allPrimers.txt"
+def mergePrimers(filename,primers,special=None):
+	if special == None :
+		fileOUt = ".\\result\\"+filename+"_allPrimers.txt"
+	elif special:
+		fileOUt = ".\\result\\"+filename+"_"+special+"Primers.txt"
 	primerReport = open(fileOUt,"w")
 	for primerList in primers:
 		shutil.copyfileobj(open(primerList, 'r'), primerReport)
@@ -83,15 +86,19 @@ def countPrimers(arrayOfPrimer):
     return countPrimer
 
 
-def setCsvReport(reportFw,countFw,reportRv,countRv,exonFw,exonRv,filename):
-	fileOUt = ".\\result\\"+filename+"_finalReport.txt"
+def setCsvReport(reportFw,countFw,reportRv,countRv,exonFw,exonRv,filename,special=None):
+	if special == None :
+		fileOUt = ".\\result\\"+filename+"_finalReport.txt"
+	elif special:
+		fileOUt = ".\\result\\"+filename+"_"+special+"_finalReport.txt"
+	
 	PrimerRate,primer,numOfIsoform = 0,0,0
 	numOfIsoform = len(reportFw.keys())
 	csvReport = open(fileOUt,"w")
-	csvReport.write("### exon isoform, forward, reverse, in common,copy number")
+	csvReport.write("### exon isoform, forward, reverse, in common( yes or copy number)")
 	csvReport.write("\n")
-	for name,arrayOfprimer in reportFw.items():
-		for seq in arrayOfprimer:			
+	for name,primerFw in reportFw.items():
+		for seq in primerFw:			
 			if not seq.startswith("not available"):
 				exon = exonFw.get(seq)	
 				csvReport.write(exon)
@@ -107,8 +114,8 @@ def setCsvReport(reportFw,countFw,reportRv,countRv,exonFw,exonRv,filename):
 					csvReport.write(str(PrimerRate))
 					csvReport.write("\n")
 					# print(seq,",N\\A,no,",name)
-	for name,arrayOfprimer in reportRv.items():
-		for seq in arrayOfprimer:			
+	for name,primerRv in reportRv.items():
+		for seq in primerRv:			
 			if not seq.startswith("not available"):
 				exon = exonRv.get(seq)	
 				csvReport.write(exon)
@@ -121,19 +128,24 @@ def setCsvReport(reportFw,countFw,reportRv,countRv,exonFw,exonRv,filename):
 					csvReport.write("\n")
 					# print("N\\A,",seq,",yes,all")
 				else:
+					csvReport.write("N\\A,")
 					csvReport.write(seq)
-					csvReport.write(",N\\A, ")
+					csvReport.write(",")
 					csvReport.write(str(PrimerRate))
 					csvReport.write("\n")
 
 	csvReport.close()
 	return fileOUt
-filename = "test"
-# print ("enter the path of your folder \n")
+
+filename = input ("enter the gene name\n")
 file = glob.glob('.\\result\\*.fa_exon_list.txt')
 primers = glob.glob('.\\result\\*.fa_primer_list.txt')
+genoPrimers = glob.glob('.\\result\\*.fa_genomic_primer_list.txt')
 # print (file)
 exonReport = finalExonList(filename,file)
-primerReport =mergePrimers(filename,primers)
+primerReport = mergePrimers(filename,primers)
+genoPrimerReport = mergePrimers(filename,genoPrimers,"genomic")
 Fwreport, Rvreport, FwCount, RvCount,exonFw,exonRv = primerInCommon(primerReport)
 setCsvReport(Fwreport,FwCount,Rvreport,RvCount,exonFw,exonRv,filename)
+genoFwreport, genoRvreport, genoFwCount, genoRvCount,genoExonFw,genoExonRv = primerInCommon(genoPrimerReport)
+setCsvReport(genoFwreport,genoFwCount,genoRvreport,genoRvCount,genoExonFw,genoExonRv,filename,"genomic")
