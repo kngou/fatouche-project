@@ -32,9 +32,9 @@ def addYourBlastDatabase(subject):
 		exit()
 
 
-def runBlastN(query,subject): 
+def runBlastN(query,subject,folderName): 
 	# run blast in command line and generated a result file in csv text format 	
-	resultfile = ".\\result\\"+subject+"_result.txt"	 	 	
+	resultfile = ".\\"+folderName+"\\"+subject+"_result.txt"	 	 	
 	subjectfile = ".\\"+subject+".tfa"	 	 	
 	#run the blast command line 
 	addYourBlastDatabase(subject)		

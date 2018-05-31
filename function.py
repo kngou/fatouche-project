@@ -35,8 +35,8 @@ def RevCom(sequence):
 	return seq
 
  
-def setExonList (exonFind,filename="none"):
-	fileOUt= ".\\result\\"+filename+"_"+"exon_list.txt"	
+def setExonList (exonFind,filename,folderName="result"):
+	fileOUt= ".\\"+folderName+"\\"+filename+"_"+"exon_list.txt"	
 	result = open(fileOUt,"w")
 	result.write("**** Isoform:")
 	filename = filename.replace("fa","")
@@ -145,8 +145,8 @@ def primerCdna(exonFind):
 
 
 
-def setPrimerOutput(finalArray,filename="none"):
-	fileOUt = ".\\result\\"+filename+"_"+"primer_list.txt"	
+def setPrimerOutput(finalArray,filename,folderName="result"):
+	fileOUt = ".\\"+folderName+"\\"+filename+"_"+"primer_list.txt"	
 	result = open(fileOUt,"w")	
 	result.write("**** Isoform ")
 	filename = filename.replace("fa","")
@@ -173,8 +173,8 @@ def setPrimerOutput(finalArray,filename="none"):
 	return fileOUt
 
 
-def setGenomicPrimerOutput(finalArray,filename="none"):
-	fileOUt = ".\\result\\"+filename+"_"+"genomic_primer_list.txt"	
+def setGenomicPrimerOutput(finalArray,filename,foldername="result"):
+	fileOUt = ".\\"+foldername+"\\"+filename+"_"+"genomic_primer_list.txt"	
 	result = open(fileOUt,"w")	
 	result.write("**** Isoform ")
 	filename = filename.replace("fa","")
@@ -201,7 +201,7 @@ def setGenomicPrimerOutput(finalArray,filename="none"):
 	return fileOUt
 
 
-def findExonSetPrimer(genomicFile,cdnaFile,blastRes):
+def findExonSetPrimer(genomicFile,cdnaFile,blastRes,folderName):
 	genomicDict =  inFile_related_function.ExtractFasta(genomicFile)
 	cdnaDict =  inFile_related_function.ExtractFasta(cdnaFile)
 	finalArray = {}
@@ -215,8 +215,8 @@ def findExonSetPrimer(genomicFile,cdnaFile,blastRes):
 			finalArray = setExonDic(blastRes,cdnaSeq)
 			 
 	outfile = os.path.basename(cdnaFile) # To keep the name of the file
-	outExon = setExonList (exonFind,outfile)
-	outFile = setPrimerOutput(finalArray,outfile)
+	outExon = setExonList (exonFind,outfile,folderName)
+	outFile = setPrimerOutput(finalArray,outfile,folderName)
 	print ("These files\n","*",outExon,"\n*",outFile,"\nhave been created.\nThey contain the exon list and the list of finding amorces.")
 
 
@@ -252,7 +252,7 @@ def setExonDic(blastRes,cdnaSeq):
 	return exonFind
 
 
-def runMain(genomicFile,cdnaFile):
+def runMain(genomicFile,cdnaFile,folderName):
 	cdnaDict =  inFile_related_function.ExtractFasta(cdnaFile)
 	genomicDict =  inFile_related_function.ExtractFasta(genomicFile)
 
@@ -261,7 +261,7 @@ def runMain(genomicFile,cdnaFile):
 
 		# -- Run blast 
 
-	blastResultfile = blast_related.runBlastN(cdnaFile,genomicFile)
+	blastResultfile = blast_related.runBlastN(cdnaFile,genomicFile,folderName)
 	blastRes = blast_related.parseBlast(blastResultfile)
 
 
@@ -282,24 +282,10 @@ def runMain(genomicFile,cdnaFile):
 # -- creation of outfile 
 
 	outfile = os.path.basename(cdnaFile) # To keep the name of the file
-	outExon = setExonList (finalArray,outfile)
-	setPrimerOutput(finalArray,outfile)
-	setGenomicPrimerOutput(finalArray,outfile)
+	outExon = setExonList (finalArray,outfile,folderName)
+	setPrimerOutput(finalArray,outfile,folderName)
+	setGenomicPrimerOutput(finalArray,outfile,folderName)
 	outCircos = setCircosKaryo(blastRes,outfile)
 
 	print ("This file\n","*",outExon,"\nhas been created.\nIt contains the exon list.")
 	return outExon
-
-def endOfprogam(quit=None):
-	while quit == None or quit == "R" or quit == "rerun" or quit == "r" or quit == "RERUN":
-		quit = input("Press Q to exit this program or R or rerun this program again:\n")
-		if quit == "R" or quit == "rerun" or quit == "r" or quit == "RERUN":
-			genomicFile = input("Enter the genomic file name as it is written in the current folder.\n")
-			cdnaFile = input("Enter the cdna file name as it is written in the current folder.\n")
-			runMain(genomicFile,cdnaFile)
-		elif quit == "Q" or quit == "q": 
-			print("End of the program, have a nice day :D.")
-			sys.exit()
-		else:
-			print(quit,"is not a correct option! End of the program have a nice day!\n")
-			sys.exit()
