@@ -21,9 +21,11 @@ This module is the main module
 """
 # -- read input command line
 
-folderName,master,genomicFile,cdnaFile,verbose = readCommandLine.commandLine()
+folderName,master,genomicList,cdnaList,verbose = readCommandLine.commandLine()
+# print(folderName,master,genomicFile,cdnaFile,verbose )
 
 
+# sys.exit()
 # -- Creation of result folder by default the folder name is "result" but it can be changed thanks to the command line
 #    it will contain all output files of this program but circos related files 
 
@@ -39,7 +41,7 @@ inFile_related_function.createResultFolder(folderName)
 				*genomicName and cdnaName retrieve thanks to -gF -cF or cdnaFile and genomicFile
 
 """
-if master and  cdnaFile or  genomicFile:
+if (master and  cdnaList) or (master and genomicList):
 	print ("You can not choose these options together, please press -h to know the correct option.")
 	sys.exit()
 elif master:
@@ -49,20 +51,39 @@ elif master:
 	for file in file :
 		genomicFile = file
 		cdnaFile = file.replace("fasta","fa")	
-		outExon = function.runMain(genomicFile,cdnaFile,folderName) # output of exonlist from genomic and cdna files.
+		function.runMain(genomicFile,cdnaFile,folderName) # output of exonlist from genomic and cdna files.
 		allFileIn+=1
-	print (allFileIn)
+
 	if NumOfFile == allFileIn:
 		genomicReport,cdnaReport = outFile_related.generateReport(folderName) # outputs final report with amorce list
-elif genomicFile and cdnaFile:
-	outExon = function.runMain(genomicFile,cdnaFile,folderName)  # output of exonlist from genomic and cdna files.
-	if outExon:
-		genomicReport,cdnaReport = outFile_related.generateReport(folderName) # outputs final report with amorce list
-	else: 
-		print("something went wrong with output files!")
+elif genomicList and cdnaList:	
+	allFileIn = 0
+	genomicFile = str(genomicList).split(",")
+	cdnaFile = str(cdnaList).split(",")
+	genoSize = len(genomicFile)
+	cdnaSize = len(cdnaFile)	
+	if genoSize != cdnaSize:
+		print("something went wrong with input files!")
+		sys.exit()
+	elif genoSize == cdnaSize:
+		for index in range(genoSize):
+			genomic = genomicFile[index].replace("[\'","")
+			genomic= genomic.replace('\']','')
+			cdna = cdnaFile[index].replace('[\'','')
+			cdna = cdna.replace('\']','')
+			# print(cdna,genomic,folderName) # output of exonlist from genomic and cdna files.
+			function.runMain(genomic,cdna,folderName) # output of exonlist from genomic and cdna files.
+		
+		outfiles = glob.glob(".\\"+folderName+"\\*.fa_exon_list.txt")
+		if len (outfiles) == genoSize:
+			genomicReport,cdnaReport = outFile_related.generateReport(folderName) # outputs final report with amorce list
+		else: 
+			print("something went wrong with output files!")
 if verbose :
-	print("these files have been created :",genomicReport,"\n",cdnaReport, "\nhave a nice day !")
+	print("these files have been created :\n",genomicReport,"\n",cdnaReport, "\nhave a nice day !")
 sys.exit()
+
+
 
 
 
