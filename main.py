@@ -77,6 +77,8 @@ elif genomicList and cdnaList:
 		outfiles = glob.glob(".\\"+folderName+"\\*.fa_exon_list.txt")
 		if len (outfiles) == genoSize:
 			genomicReport,cdnaReport = outFile_related.generateReport(folderName) # outputs final report with amorce list
+		elif genoSize == 1:
+			genomicReport,cdnaReport = outFile_related.generateReport(folderName) # outputs final report with amorce list
 		else: 
 			print("something went wrong with output files!")
 if verbose :
